@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <title>90-Day Plan — s.x.traveler Training</title>
+  <meta name="description" content="90-day training plan. Monday/Wednesday/Friday strength, Tuesday/Thursday/Saturday HIIT cardio, Sunday rest. Sources: @TIFFxDAN & @DantheHIITMan." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;500;700&family=Archivo+Narrow:wght@400;500;700&display=swap" rel="stylesheet" />
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: #0a0a0a; color: #f5f5f0; min-height: 100vh; }
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .font-display { font-family: 'Anton', 'Impact', sans-serif; letter-spacing: 0.01em; }
+    .font-mono { font-family: 'JetBrains Mono', 'Courier New', monospace; }
+    .font-narrow { font-family: 'Archivo Narrow', 'Helvetica Neue', sans-serif; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .row-enter { animation: fadeInUp 0.3s ease-out both; }
+
+    .grain::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.035;
+      z-index: 1;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    input:focus, input[type="date"]:focus { outline: 1px solid #c5ff00; }
+    input[type="date"] { color-scheme: dark; }
+
+    #loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0a0a0a;
+      z-index: 999;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.25em;
+      color: #c5ff00;
+    }
+    #loading.hidden { display: none; }
+
+    /* Responsive table */
+    .plan-row-desktop { display: grid; grid-template-columns: 60px 80px 70px 1fr 60px 90px 70px; gap: 12px; align-items: center; padding: 10px 14px; border-bottom: 1px solid #1a1a1a; }
+    .plan-row-mobile  { display: none; }
+    @media (max-width: 760px) {
+      .plan-row-desktop { display: none; }
+      .plan-row-mobile  { display: block; padding: 14px; border-bottom: 1px solid #1a1a1a; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">LOADING PLAN...</div>
+  <div id="root"></div>
+
+  <script type="text/babel" data-type="module">
+    const { useState, useEffect, useMemo } = React;
+
+    // ===== ICONS =====
+    const Icon = ({ children, size = 14, style = {}, fill = 'none' }) =>
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', ...style }}>{children}</svg>;
+    const PlayIcon  = (p) => <Icon {...p} fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></Icon>;
+    const CheckIcon = (p) => <Icon {...p}><polyline points="20 6 9 17 4 12"/></Icon>;
+    const DumbbellIcon = (p) => <Icon {...p}><path d="M14.4 14.4 9.6 9.6"/><path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z"/><path d="m21.5 21.5-1.4-1.4"/><path d="M3.9 3.9 2.5 2.5"/><path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z"/></Icon>;
+    const FlameIcon = (p) => <Icon {...p}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></Icon>;
+    const MoonIcon  = (p) => <Icon {...p}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></Icon>;
+
+    // ===== VIDEOS DATA =====
+    const STRENGTH_COLOR = '#c5ff00';
+    const CARDIO_COLOR = '#ff4a1a';
+    const REST_COLOR = '#444';
+
+    const VIDEOS = {
+      P1:  { title: 'Day 8: 30 Min BACK & BICEPS Dumbbell Workout [Pull Workout] // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=Baa2r3PDFQo' },
+      P2:  { title: 'Day 4: 30 Min EXPLOSIVE BACK & BICEPS Workout // 6WS2', dur: 30, url: 'https://www.youtube.com/watch?v=NnnHe0yTV5M' },
+      P3:  { title: 'Day 24: 40 Min TOUGH BACK & BICEPS [Dumbbell Pull Workout] // 6WS1', dur: 30, url: 'https://www.youtube.com/watch?v=PirlPHirrh0' },
+      P4:  { title: '30 Minute Dumbbell Back and Bicep Workout At Home [PULL WORKOUT]', dur: 30, url: 'https://www.youtube.com/watch?v=1tHZ-hUH2P8' },
+      P5:  { title: 'Sculpt Your Back and Biceps in 30 Min', dur: 30, url: 'https://www.youtube.com/watch?v=46Qp2R01_bM' },
+      P6:  { title: 'Back, Biceps & Abs Strength Workout – Dumbbells Only', dur: 30, url: 'https://www.youtube.com/watch?v=vXOp-qnVNJs' },
+      P7:  { title: 'Day 12: 40 Min BACK AND BICEP Workout with Dumbbells // 6WS1', dur: 30, url: 'https://www.youtube.com/watch?v=CJAuoiOI73w' },
+      P8:  { title: 'Day 29: 30 Min CHALLENGING BACK & CALVES [with Dumbbells] // 6WS1', dur: 30, url: 'https://www.youtube.com/watch?v=-JVAWVkUTYs' },
+      P9:  { title: 'Day 28: 30 Min BUILD BACK & BICEPS + Abs [Dumbbell Workout] // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=Ucf4bhoUMO8' },
+      P10: { title: 'Day 18: 30 Min BACK & GLUTE Dumbbell Workout [Posterior Chain SUPERSETS] // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=peZ5P6csjnQ' },
+
+      PU1:  { title: 'Day 6: 30 Min PUSH DAY // CHEST & SHOULDER Dumbbell Workout // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=istrblWpRDs' },
+      PU2:  { title: 'Day 17: 30 Min ULTIMATE PUSH WORKOUT [Chest, Shoulders + Triceps] // 6WS2', dur: 30, url: 'https://www.youtube.com/watch?v=hNiv_fiyDks' },
+      PU3:  { title: 'Day 2: 30 Min CHEST & TRICEP Workout [Bodyweight + Dumbbells] // 6WS2', dur: 30, url: 'https://www.youtube.com/watch?v=U2DPEg91bAc' },
+      PU4:  { title: 'Day 11: 30 Min CHEST AND TRICEP Workout with Dumbbells // 6WS1', dur: 30, url: 'https://www.youtube.com/watch?v=_TqrKYujoCY' },
+      PU5:  { title: 'Day 12: 30 Min SHOULDERS & TRICEPS Dumbbell Supersets // 6WS2', dur: 30, url: 'https://www.youtube.com/watch?v=c_vB_jqgPDk' },
+      PU6:  { title: 'Day 13: 30 Min SOLID UPPER BODY [Killer Drop Sets] // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=k41VqE4agos' },
+      PU7:  { title: 'Day 26: 30 Min Dumbbell CHEST & TRICEP [High Volume] // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=hkeLoBUbY00' },
+      PU8:  { title: 'Day 26: 30 Min LARGER CHEST + PUSH UP VARIATIONS // 6WS1', dur: 30, url: 'https://www.youtube.com/watch?v=PI1jkxzqAv0' },
+      PU9:  { title: 'Day 22: 40 Min Dumbbell PUSH WORKOUT [Chest, Triceps & Shoulders] // 6WS1', dur: 30, url: 'https://www.youtube.com/watch?v=TF1-Dt7IKLA' },
+      PU10: { title: 'Day 38: 30 Min BOULDER Shoulders and Delts Workout // 6WS2', dur: 30, url: 'https://www.youtube.com/watch?v=Jab1Mo-WR9o' },
+      PU11: { title: 'Day 9: 30 Min DUMBBELL ARM WORKOUT Slow and Controlled // 6WS2', dur: 30, url: 'https://www.youtube.com/watch?v=gsPz4Sd30_U' },
+      PU12: { title: 'Day 12: 30 Min STRONG ARMS & ABS [Strength + Sculpt] // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=5rrBpKf7ivs' },
+      PU13: { title: '20 MIN UPPER BODY Workout (Isometric + Dynamic, Dumbbell)', dur: 20, url: 'https://www.youtube.com/watch?v=RjHPT58P91Q' },
+
+      L1:  { title: 'Day 1: 30 Min LEG DAY [Dumbbell Leg Workout] // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=JGQ935Pvk_g' },
+      L2:  { title: 'Day 21: 30 Min DUMBBELL LEG WORKOUT [Pyramid Sets] // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=nZW9PElcDys' },
+      L3:  { title: 'Day 23: 40 Min QUADS, HAMS, GLUTS & CALVES [Home Leg Workout] // 6WS1', dur: 30, url: 'https://www.youtube.com/watch?v=-v98vVNO99A' },
+      L4:  { title: '40 Min Home Leg Workout MASH UP (Quads, Glutes, Calves & Hamstrings)', dur: 30, url: 'https://www.youtube.com/watch?v=lbHmvUKhKhA' },
+      L5:  { title: '30 Min LEG WORKOUT FROM HELL (Quads, Calves, Hamstrings & Glutes)', dur: 30, url: 'https://www.youtube.com/watch?v=vK_DQYimccw' },
+      L6:  { title: 'Day 24: 30 Min Lower Body DUMBBELL SUPERSETS Workout // 6WS2', dur: 30, url: 'https://www.youtube.com/watch?v=APscGdFh5rU' },
+
+      U1:  { title: 'Day 2: 30 Min TOTAL UPPER BODY Dumbbell Workout // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=fJQmoPKvjTg' },
+      U2:  { title: 'Day 22: 30 Min FULL BODY Dumbbell SUPERSET Workout // 6WS2', dur: 30, url: 'https://www.youtube.com/watch?v=1XWscS8h0m8' },
+      U3:  { title: 'The Ultimate 25 Min Upper Body Dumbbell Workout', dur: 25, url: 'https://www.youtube.com/watch?v=fkZq3ZnrXn8' },
+      U4:  { title: '25 Minute UPPER Body Burner (Shoulders, Back, Chest, Arms)', dur: 25, url: 'https://www.youtube.com/watch?v=OXmo07BNEQI' },
+      U5:  { title: '25 Min Full Body Dumbbell Workout at Home', dur: 25, url: 'https://www.youtube.com/watch?v=N05p3wToB_o' },
+      U6:  { title: '25 Minute Full Body Dumbbell Workout for Busy People', dur: 25, url: 'https://www.youtube.com/watch?v=sDF08spBdTo' },
+      U7:  { title: '25 Min FULL BODY Dumbbell Workout + HIIT', dur: 25, url: 'https://www.youtube.com/watch?v=eqTF-rDHm2I' },
+
+      H1:  { title: 'Day 5: 30 Min Full Body FAT BURNING HIIT Workout // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=lgh5_cBG3Io' },
+      H2:  { title: '30 Min No Repeats HIIT Cardio Workout (No Jumping Options)', dur: 30, url: 'https://www.youtube.com/watch?v=kJ-3g9pzJdQ' },
+      H3:  { title: '30 Min Intense HIIT Workout For Fat Burn & Cardio', dur: 30, url: 'https://www.youtube.com/watch?v=4nPKyvKmFi0' },
+      H4:  { title: '30 Min Fat Burning HIIT Workout at Home | No Equipment', dur: 30, url: 'https://www.youtube.com/watch?v=hUdaTPMi6es' },
+      H5:  { title: '30 Min Fat Burning HIIT Workout — Full Body Cardio', dur: 30, url: 'https://www.youtube.com/watch?v=hJY3moMrMMM' },
+      H6:  { title: '30 Min FULL BODY CARDIO HIIT | No Equipment, No Repeats', dur: 30, url: 'https://www.youtube.com/watch?v=zwzY0211jzw' },
+      H7:  { title: 'BURN 500 CALORIES 30 Min FULL BODY HIIT Workout', dur: 30, url: 'https://www.youtube.com/watch?v=9zt6Hc84rjg' },
+      H8:  { title: 'Burn 350 Calories in 25 Minutes — Full Body HIIT + Abs', dur: 25, url: 'https://www.youtube.com/watch?v=-0PfFYZtYHE' },
+      H9:  { title: '20 Minute Full Body Cardio HIIT Workout [NO REPEAT]', dur: 20, url: 'https://www.youtube.com/watch?v=M0uO8X3_tEA' },
+      H10: { title: 'Day 10: 30 Min SUPER SWEATY HIIT [No Equipment] // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=Yg15MEZPrX4' },
+      H11: { title: 'Day 15: 30 Min INTENSE HIIT WORKOUT | Full Body // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=Vi0MznKsueY' },
+      H12: { title: 'Day 20: 30 Min KILLER HIIT CARDIO Workout // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=8voeo-zBiJE' },
+      H13: { title: 'Day 25: 30 Min Full Body KILLER CARDIO HIIT [SWEATY] // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=eKmLveNKs8o' },
+      H14: { title: 'Day 30: 30 Min HARDCORE HIIT [Bodyweight + Dumbbells] // 6WS3', dur: 30, url: 'https://www.youtube.com/watch?v=vHL5BSAppGA' },
+      H15: { title: '30 Min KILLER HIIT Workout + Dumbbells [BURN 500 CALORIES]', dur: 30, url: 'https://www.youtube.com/watch?v=vzWPuKcKkJg' },
+      H16: { title: 'Day 11: 30 Min DUMBBELL HIIT + ABS [Fat Burning Workout] // 6WS2', dur: 30, url: 'https://www.youtube.com/watch?v=GB3kMRTr_w4' },
+      H17: { title: '30 Min Hardcore HIIT [Burn up to 500+ Calories] No Equipment', dur: 30, url: 'https://www.youtube.com/watch?v=HtwkEdFf-kw' },
+      H18: { title: '20 Min FULL BODY CARDIO HIIT (Fat Burning, No Equipment)', dur: 20, url: 'https://www.youtube.com/watch?v=ARa0LSbt8BY' },
+      H19: { title: '20 Min CARDIO HIIT — ALL STANDING [No Equipment]', dur: 20, url: 'https://www.youtube.com/watch?v=85evkktu56o' },
+      H20: { title: '20 Min HIIT Full Body Workout [No Repeats, No Equipment]', dur: 20, url: 'https://www.youtube.com/watch?v=wppLAEXbtOs' },
+      H21: { title: '20 MIN CARDIO HIIT — Full Body, No Equipment, No Repeats', dur: 20, url: 'https://www.youtube.com/watch?v=IBEfCSJeop4' },
+      H22: { title: '20 Min TABATA HIIT (Burn 400 Calories, Full Body)', dur: 20, url: 'https://www.youtube.com/watch?v=cAdnyva1x3o' },
+      H23: { title: '20 Min Fat Burning HIIT — Full Body Cardio', dur: 20, url: 'https://www.youtube.com/watch?v=-hSma-BRzoo' },
+      H24: { title: '20 MIN CARDIO HIIT — ALL STANDING, Full Body', dur: 20, url: 'https://www.youtube.com/watch?v=fleFCoQmF6I' },
+      H25: { title: '20 Min HIIT Workout to Burn Calories (No Jumping)', dur: 20, url: 'https://www.youtube.com/watch?v=ZQ9GmBmUmuA' },
+      H26: { title: '20 Min Fat Burning HIIT — All Standing, No Jumping', dur: 20, url: 'https://www.youtube.com/watch?v=1V3LgKFZ3dI' },
+      H27: { title: '20 Min KILLER HIIT Full Body Workout | No Equipment', dur: 20, url: 'https://www.youtube.com/watch?v=lCQhXjnfv7Y' },
+      H28: { title: 'This No Equipment 20 Min FAT BURNING HIIT Kicked My Ass!', dur: 20, url: 'https://www.youtube.com/watch?v=rePARzu-1kk' },
+      H29: { title: '25 MIN INTENSE FULL BODY Dumbbell HIIT (No Jumping)', dur: 25, url: 'https://www.youtube.com/watch?v=Qoia960kas8' },
+      H30: { title: '25 Min Full Body HIIT Dumbbell Workout — NO REPEAT', dur: 25, url: 'https://www.youtube.com/watch?v=dHGA4y-h13k' },
+      H31: { title: '25 Min UPPER BODY HIIT with Dumbbells', dur: 25, url: 'https://www.youtube.com/watch?v=OBk-Z5pS4XQ' },
+      H34: { title: '30 Min Full Body Dumbbell Strength & HIIT (Tiff & Dan)', dur: 30, url: 'https://www.youtube.com/watch?v=gZPqmg-gqlo' },
+      H35: { title: '30 Min SWEATY Low Impact HIIT [NO JUMPING + APARTMENT FRIENDLY]', dur: 30, url: 'https://www.youtube.com/watch?v=4RFX3ooPdNI' },
+      H36: { title: '30 Min Full Body HIIT Workout with Dumbbells', dur: 30, url: 'https://www.youtube.com/watch?v=2Io0F0wEWlk' },
+      H37: { title: '30 Minute Full Body Dumbbell HIIT Training', dur: 30, url: 'https://www.youtube.com/watch?v=czow6GlY_PA' },
+      H38: { title: '25 MIN FULL BODY HIIT (ADVANCED) No Equipment, No Repeat', dur: 25, url: 'https://www.youtube.com/watch?v=TuJQ1A6F4Oc' },
+      H39: { title: '25 Min Full Body HIIT — ALL STANDING, Fat Burn', dur: 25, url: 'https://www.youtube.com/watch?v=JfBfOTSIcyw' },
+      H40: { title: '25 Min Full Body HIIT Workout | No Equipment, No Repeats', dur: 25, url: 'https://www.youtube.com/watch?v=_3X4-3mU2z8' },
+      H41: { title: '25 Min Cardio HIIT & Abs | No Repeats, Full Body Burn', dur: 25, url: 'https://www.youtube.com/watch?v=a64v1_N5ZQQ' }
+    };
+
+    const TYPE_META = {
+      PULL:  { color: STRENGTH_COLOR, label: 'PULL',  symbol: '←', isStrength: true },
+      PUSH:  { color: STRENGTH_COLOR, label: 'PUSH',  symbol: '→', isStrength: true },
+      LEGS:  { color: STRENGTH_COLOR, label: 'LEGS',  symbol: '↓', isStrength: true },
+      UPPER: { color: STRENGTH_COLOR, label: 'UPPER', symbol: '⇅', isStrength: true },
+      HIIT:  { color: CARDIO_COLOR,   label: 'HIIT',  symbol: '✺', isStrength: false },
+      REST:  { color: REST_COLOR,     label: 'REST',  symbol: '○', isStrength: null }
+    };
+
+    const STORAGE_KEY = 'sxtraveler-90day-plan-done-v1';
+    const START_DATE_KEY = 'sxtraveler-90day-plan-startdate-v1';
+
+    // ===== PLAN GENERATOR =====
+    function generate90DayPlan() {
+      const PULL_SEQ  = ['P1','P2','P3','P4','P5','P6','P7','P8','P9','P10','P1','P2','P3'];
+      const PUSH_SEQ  = ['PU1','PU2','PU3','PU4','PU5','PU6','PU7','PU8','PU9','PU10','PU11','PU12','PU13'];
+      const LEGS_SEQ  = ['L1','L2','L3','L4','L5','L6'];
+      const UPPER_SEQ = ['U1','U2','U3','U4','U5','U6','U7'];
+      const HIIT_SEQ  = ['H1','H2','H3','H4','H5','H6','H7','H8','H9','H10','H11','H12','H13','H14','H15','H16','H17','H18','H19','H20','H21','H22','H23','H24','H25','H26','H27','H28','H29','H30','H31','H34','H35','H36','H37','H38','H39','H40','H41'];
+      const DOW = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+
+      let pI = 0, puI = 0, lI = 0, uI = 0, hI = 0;
+      const plan = [];
+
+      for (let day = 1; day <= 90; day++) {
+        const week = Math.ceil(day / 7);
+        const dow = DOW[(day - 1) % 7];
+        let type = 'REST', videoId = null;
+
+        if (dow === 'MON') { type = 'PULL'; videoId = PULL_SEQ[pI++]; }
+        else if (dow === 'WED') { type = 'PUSH'; videoId = PUSH_SEQ[puI++]; }
+        else if (dow === 'FRI') {
+          if (week % 2 === 1) { type = 'UPPER'; videoId = UPPER_SEQ[uI++]; }
+          else { type = 'LEGS'; videoId = LEGS_SEQ[lI++]; }
+        }
+        else if (dow === 'TUE' || dow === 'THU' || dow === 'SAT') { type = 'HIIT'; videoId = HIIT_SEQ[hI++]; }
+
+        plan.push({ day, week, dow, type, videoId });
+      }
+      return plan;
+    }
+
+    // ===== DATE HELPERS =====
+    function formatDate(startDateStr, dayOffset) {
+      if (!startDateStr) return null;
+      const d = new Date(startDateStr + 'T00:00:00');
+      d.setDate(d.getDate() + dayOffset - 1);
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      return `${dd}.${mm}`;
+    }
+
+    // ===== MAIN COMPONENT =====
+    function PlanApp() {
+      const [done, setDone] = useState(new Set());
+      const [startDate, setStartDate] = useState('');
+      const plan = useMemo(() => generate90DayPlan(), []);
+
+      useEffect(() => {
+        try {
+          const rawDone = localStorage.getItem(STORAGE_KEY);
+          if (rawDone) setDone(new Set(JSON.parse(rawDone)));
+          const sd = localStorage.getItem(START_DATE_KEY);
+          if (sd) setStartDate(sd);
+        } catch (e) {}
+      }, []);
+
+      const toggleDone = (day) => {
+        const next = new Set(done);
+        if (next.has(day)) next.delete(day); else next.add(day);
+        setDone(next);
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...next])); } catch (e) {}
+      };
+
+      const handleStartDate = (v) => {
+        setStartDate(v);
+        try { localStorage.setItem(START_DATE_KEY, v); } catch (e) {}
+      };
+
+      const resetAll = () => {
+        if (!confirm('Reset all progress? This cannot be undone.')) return;
+        setDone(new Set());
+        try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+      };
+
+      const totalWorkouts = plan.filter(d => d.type !== 'REST').length;
+      const doneWorkouts = plan.filter(d => d.type !== 'REST' && done.has(d.day)).length;
+      const pct = (doneWorkouts / totalWorkouts) * 100;
+
+      const doneStrength = plan.filter(d => TYPE_META[d.type].isStrength === true && done.has(d.day)).length;
+      const totalStrength = plan.filter(d => TYPE_META[d.type].isStrength === true).length;
+      const doneCardio = plan.filter(d => TYPE_META[d.type].isStrength === false && done.has(d.day)).length;
+      const totalCardio = plan.filter(d => TYPE_META[d.type].isStrength === false).length;
+
+      // group by week
+      const weeks = {};
+      plan.forEach(d => { if (!weeks[d.week]) weeks[d.week] = []; weeks[d.week].push(d); });
+
+      return (
+        <div className="grain" style={{ minHeight: '100vh', position: 'relative' }}>
+          {/* HEADER */}
+          <header style={{ borderBottom: '1px solid #1f1f1f', position: 'relative', zIndex: 2 }}>
+            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px 16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20 }}>
+                <div>
+                  <div className="font-mono" style={{ fontSize: 11, color: '#666', letterSpacing: '0.15em', marginBottom: 8 }}>
+                    S.X.TRAVELER / 90-DAY EXECUTION PLAN / 2026
+                  </div>
+                  <h1 className="font-display" style={{ fontSize: 'clamp(44px, 7vw, 88px)', lineHeight: 0.92, margin: 0, textTransform: 'uppercase' }}>
+                    90<span style={{ color: '#333' }}>·</span>Day<br />
+                    <span style={{ color: STRENGTH_COLOR }}>Train</span>
+                    <span style={{ color: '#333' }}> / </span>
+                    <span style={{ color: CARDIO_COLOR }}>Plan</span>
+                  </h1>
+                </div>
+                <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                  <Stat label="DAY" value={`${doneWorkouts}/${totalWorkouts}`} color="#f5f5f0" />
+                  <Stat label="STRENGTH" value={`${doneStrength}/${totalStrength}`} color={STRENGTH_COLOR} />
+                  <Stat label="CARDIO" value={`${doneCardio}/${totalCardio}`} color={CARDIO_COLOR} />
+                </div>
+              </div>
+
+              <div style={{ marginTop: 28 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
+                  <span className="font-mono" style={{ fontSize: 10, color: '#666', letterSpacing: '0.15em' }}>EXECUTION PROGRESS</span>
+                  <span className="font-mono" style={{ fontSize: 10, color: '#c5ff00', letterSpacing: '0.1em' }}>{pct.toFixed(1)}%</span>
+                </div>
+                <div style={{ height: 3, background: '#1a1a1a', position: 'relative', display: 'flex' }}>
+                  <div style={{ height: '100%', width: `${(doneStrength / totalWorkouts) * 100}%`, background: STRENGTH_COLOR, transition: 'width 0.5s ease' }} />
+                  <div style={{ height: '100%', width: `${(doneCardio / totalWorkouts) * 100}%`, background: CARDIO_COLOR, transition: 'width 0.5s ease' }} />
+                </div>
+              </div>
+
+              <div style={{ marginTop: 20, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div>
+                  <label className="font-mono" style={{ fontSize: 10, color: '#666', letterSpacing: '0.2em', display: 'block', marginBottom: 4 }}>
+                    START DATE (OPTIONAL)
+                  </label>
+                  <input type="date" value={startDate} onChange={e => handleStartDate(e.target.value)} className="font-mono"
+                    style={{ background: '#111', border: '1px solid #2a2a2a', color: '#f5f5f0', padding: '6px 10px', fontSize: 12, letterSpacing: '0.05em' }} />
+                </div>
+                {done.size > 0 && (
+                  <button onClick={resetAll} className="font-mono"
+                    style={{ background: 'transparent', border: '1px solid #2a2a2a', color: '#666', padding: '8px 14px', fontSize: 10, letterSpacing: '0.2em', cursor: 'pointer', alignSelf: 'flex-end' }}>
+                    RESET ALL
+                  </button>
+                )}
+                <div className="font-mono" style={{ fontSize: 10, color: '#444', letterSpacing: '0.15em', alignSelf: 'flex-end', flex: 1, textAlign: 'right' }}>
+                  MON–SAT TRAINING · SUN REST
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* WEEKS */}
+          <main style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 80px', position: 'relative', zIndex: 2 }}>
+            {Object.keys(weeks).map(wk => (
+              <WeekBlock key={wk} week={Number(wk)} days={weeks[wk]} done={done} toggleDone={toggleDone} startDate={startDate} />
+            ))}
+          </main>
+
+          <footer style={{ borderTop: '1px solid #1f1f1f', padding: '24px', position: 'relative', zIndex: 2 }}>
+            <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+              <div className="font-mono" style={{ fontSize: 10, color: '#444', letterSpacing: '0.2em' }}>
+                SOURCES: @TIFFXDAN · @DANTHEHIITMAN
+              </div>
+              <div className="font-mono" style={{ fontSize: 10, color: '#444', letterSpacing: '0.2em', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ color: STRENGTH_COLOR }}>STRENGTH</span>
+                <span>×</span>
+                <span style={{ color: CARDIO_COLOR }}>CARDIO</span>
+                <span>/ ALTERNATING</span>
+              </div>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    function Stat({ label, value, color }) {
+      return (
+        <div style={{ minWidth: 80 }}>
+          <div className="font-display" style={{ fontSize: 30, lineHeight: 1, color }}>{value}</div>
+          <div className="font-mono" style={{ fontSize: 9, color: '#666', letterSpacing: '0.2em', marginTop: 4 }}>{label}</div>
+        </div>
+      );
+    }
+
+    function WeekBlock({ week, days, done, toggleDone, startDate }) {
+      const weekDone = days.filter(d => d.type !== 'REST' && done.has(d.day)).length;
+      const weekTotal = days.filter(d => d.type !== 'REST').length;
+      const isLegWeek = week % 2 === 0;
+      const weekLabel = isLegWeek ? 'LEGS WEEK' : 'UPPER WEEK';
+      const weekColor = weekDone === weekTotal ? '#c5ff00' : '#555';
+
+      return (
+        <section style={{ marginBottom: 32, border: '1px solid #1a1a1a', background: '#0f0f0f' }}>
+          {/* Week header */}
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid #1a1a1a', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
+              <span className="font-display" style={{ fontSize: 28, letterSpacing: '0.02em' }}>
+                WEEK <span style={{ color: weekColor }}>{String(week).padStart(2, '0')}</span>
+              </span>
+              <span className="font-mono" style={{ fontSize: 10, color: '#555', letterSpacing: '0.2em' }}>
+                {weekLabel} · {weekDone}/{weekTotal} DONE
+              </span>
+            </div>
+          </div>
+
+          {/* Desktop table header */}
+          <div className="plan-row-desktop font-mono" style={{ background: '#0a0a0a', borderBottom: '1px solid #1a1a1a', fontSize: 9, color: '#555', letterSpacing: '0.2em', padding: '8px 14px' }}>
+            <div>DAY</div>
+            <div>DATE</div>
+            <div>TYPE</div>
+            <div>WORKOUT</div>
+            <div style={{ textAlign: 'center' }}>MIN</div>
+            <div style={{ textAlign: 'center' }}>WATCH</div>
+            <div style={{ textAlign: 'center' }}>DONE</div>
+          </div>
+
+          {/* Rows */}
+          <div>
+            {days.map((d, idx) => (
+              <PlanRow key={d.day} d={d} done={done.has(d.day)} onToggle={() => toggleDone(d.day)} startDate={startDate} delay={idx * 15} />
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    function PlanRow({ d, done, onToggle, startDate, delay }) {
+      const meta = TYPE_META[d.type];
+      const isRest = d.type === 'REST';
+      const video = d.videoId ? VIDEOS[d.videoId] : null;
+      const dateStr = formatDate(startDate, d.day);
+      const opacity = isRest ? 0.45 : (done ? 0.6 : 1);
+
+      return (
+        <div className="row-enter" style={{ animationDelay: `${delay}ms`, opacity }}>
+          {/* DESKTOP */}
+          <div className="plan-row-desktop" style={{ background: isRest ? '#0b0b0b' : '#0f0f0f' }}>
+            <div className="font-mono" style={{ fontSize: 12, color: '#f5f5f0', fontWeight: 600 }}>
+              <span style={{ color: '#666' }}>D</span>{String(d.day).padStart(2, '0')}
+              <span style={{ color: '#333', margin: '0 6px' }}>·</span>
+              <span style={{ color: '#666', fontSize: 10 }}>{d.dow}</span>
+            </div>
+            <div className="font-mono" style={{ fontSize: 11, color: dateStr ? '#888' : '#333', letterSpacing: '0.05em' }}>
+              {dateStr || '—'}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {isRest ? <MoonIcon size={11} style={{ color: meta.color }} /> : (meta.isStrength ? <DumbbellIcon size={11} style={{ color: meta.color }} /> : <FlameIcon size={11} style={{ color: meta.color }} />)}
+              <span className="font-mono" style={{ fontSize: 10, color: meta.color, letterSpacing: '0.15em', fontWeight: 700 }}>
+                {meta.label}
+              </span>
+            </div>
+            <div className="font-narrow" style={{ fontSize: 14, color: isRest ? '#555' : '#f5f5f0', lineHeight: 1.3, textDecoration: done ? 'line-through' : 'none', textDecorationColor: meta.color }}>
+              {isRest ? 'Recovery day — rest, sleep, stretch, walk.' : (video ? `${d.videoId} · ${video.title}` : '—')}
+            </div>
+            <div className="font-mono" style={{ fontSize: 11, color: '#888', textAlign: 'center' }}>
+              {video ? video.dur : '—'}
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              {video ? (
+                <a href={video.url} target="_blank" rel="noopener noreferrer" className="font-mono"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'transparent', border: `1px solid ${meta.color}`, color: meta.color, padding: '5px 10px', fontSize: 10, letterSpacing: '0.15em', fontWeight: 700, textDecoration: 'none', transition: 'all 0.15s ease' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = meta.color; e.currentTarget.style.color = '#0a0a0a'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = meta.color; }}>
+                  <PlayIcon size={9} /> GO
+                </a>
+              ) : <span style={{ color: '#333', fontSize: 10 }}>—</span>}
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              {!isRest && (
+                <button onClick={onToggle} className="font-mono"
+                  style={{ background: done ? meta.color : 'transparent', border: `1px solid ${done ? meta.color : '#2a2a2a'}`, color: done ? '#0a0a0a' : '#666', padding: '5px 9px', fontSize: 10, letterSpacing: '0.1em', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s ease', minWidth: 50 }}>
+                  {done ? '✓' : '○'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* MOBILE */}
+          <div className="plan-row-mobile" style={{ background: isRest ? '#0b0b0b' : '#0f0f0f' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span className="font-mono" style={{ fontSize: 13, color: '#f5f5f0', fontWeight: 700 }}>
+                  <span style={{ color: '#666' }}>D</span>{String(d.day).padStart(2, '0')}
+                </span>
+                <span className="font-mono" style={{ fontSize: 10, color: '#666' }}>{d.dow}</span>
+                {dateStr && <span className="font-mono" style={{ fontSize: 10, color: '#888' }}>· {dateStr}</span>}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {isRest ? <MoonIcon size={10} style={{ color: meta.color }} /> : (meta.isStrength ? <DumbbellIcon size={10} style={{ color: meta.color }} /> : <FlameIcon size={10} style={{ color: meta.color }} />)}
+                <span className="font-mono" style={{ fontSize: 10, color: meta.color, letterSpacing: '0.15em', fontWeight: 700 }}>{meta.label}</span>
+              </div>
+            </div>
+            <div className="font-narrow" style={{ fontSize: 14, color: isRest ? '#555' : '#f5f5f0', lineHeight: 1.35, marginBottom: 12, textDecoration: done ? 'line-through' : 'none', textDecorationColor: meta.color }}>
+              {isRest ? 'Recovery day — rest, sleep, stretch, walk.' : (video ? `${d.videoId} · ${video.title}` : '—')}
+            </div>
+            {!isRest && video && (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <a href={video.url} target="_blank" rel="noopener noreferrer" className="font-mono"
+                  style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'transparent', border: `1px solid ${meta.color}`, color: meta.color, padding: '8px 12px', fontSize: 10, letterSpacing: '0.15em', fontWeight: 700, textDecoration: 'none' }}>
+                  <PlayIcon size={10} /> WATCH · {video.dur}min
+                </a>
+                <button onClick={onToggle} className="font-mono"
+                  style={{ background: done ? meta.color : 'transparent', border: `1px solid ${done ? meta.color : '#2a2a2a'}`, color: done ? '#0a0a0a' : '#666', padding: '8px 14px', fontSize: 10, letterSpacing: '0.15em', fontWeight: 700, cursor: 'pointer' }}>
+                  {done ? '✓ DONE' : '○ MARK'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ===== MOUNT =====
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<PlanApp />);
+    document.getElementById('loading').classList.add('hidden');
+  </script>
+</body>
+</html>
